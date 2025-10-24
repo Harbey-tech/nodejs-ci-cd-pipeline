@@ -3,7 +3,7 @@ pipeline {
 
     
     environment {
-    NODEJS_HOME = tool name: 'NodeJS_25', type: 'NodeJS'
+    NODEJS_HOME = tool name: 'NodeJS_25.0.0', type: 'NodeJS'
     PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
     DEPLOY_SERVER = 'ec2-user@<EC2_PUBLIC_IP>'
     DEPLOY_PATH = '/var/www/my-node-app'
