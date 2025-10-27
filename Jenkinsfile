@@ -1,7 +1,21 @@
 pipeline {
     agent any
 
+    environment {
+        NODE_VERSION = '18'
+        DEPLOY_SERVER = 'ubuntu@13.220.91.38'
+        DEPLOY_PATH = '/var/www/myapp'
+    }
+
     stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/Harbey-tech/nodejs-ci-cd-pipeline.git',
+                    credentialsId: 'github-token'
+            }
+        }
+
         stage('Check Node.js') {
             steps {
                 sh 'node -v'
@@ -17,29 +31,34 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh 'npm test || echo "No tests defined"'
+                sh 'npm test'
             }
         }
 
         stage('Build') {
             steps {
-                sh 'npm run build || echo "No build script defined"'
+                sh 'npm run build'
             }
         }
 
         stage('Deploy') {
             steps {
-                sshagent(['ec2-ssh-key']) { // <-- Jenkins credential ID for your private key
-                    sh 'scp -r ./dist ubuntu@13.220.91.38:/var/www/myapp'
-                    sh 'ssh ubuntu@13.220.91.38 "cd /var/www/myapp && ls -l"'
+                sshagent(['ubuntu']) {
+                    sh """
+                        ssh ${DEPLOY_SERVER} 'mkdir -p ${DEPLOY_PATH}'
+                        scp -r * ${DEPLOY_SERVER}:${DEPLOY_PATH}
+                    """
                 }
             }
         }
     }
 
     post {
-        always {
-            echo 'Pipeline finished'
+        success {
+            echo '✅ Pipeline succeeded!'
+        }
+        failure {
+            echo '❌ Pipeline failed!'
         }
     }
 }
