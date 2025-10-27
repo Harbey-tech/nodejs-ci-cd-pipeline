@@ -1,37 +1,11 @@
 pipeline {
     agent any
 
-    environment {
-        DEPLOY_SERVER = 'ubuntu@3.89.97.3'
-        DEPLOY_PATH = '/var/www/my-node-app'
-    }
-
     stages {
         stage('Check Node.js') {
             steps {
-                script {
-                    def nodeVersion = sh(script: "node -v || echo 'Node.js not found'", returnStdout: true).trim()
-                    if (nodeVersion == 'Node.js not found') {
-                        error("❌ Node.js is not installed on Jenkins server.")
-                    } else {
-                        echo "✅ Node.js is installed: ${nodeVersion}"
-                    }
-
-                    def npmVersion = sh(script: "npm -v || echo 'npm not found'", returnStdout: true).trim()
-                    if (npmVersion == 'npm not found') {
-                        error("❌ npm is not installed on Jenkins server.")
-                    } else {
-                        echo "✅ npm is installed: ${npmVersion}"
-                    }
-                }
-            }
-        }
-
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/Harbey-tech/nodejs-ci-cd-pipeline.git',
-                    credentialsId: 'github-token'
+                sh 'node -v'
+                sh 'npm -v'
             }
         }
 
@@ -55,26 +29,17 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sshagent(['ec2-ssh-key']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} << 'EOF'
-                        cd ${DEPLOY_PATH}
-                        git pull origin main
-                        npm install --production
-                        pm2 restart my-node-app || pm2 start app.js --name "my-node-app"
-                        EOF
-                    """
+                sshagent(['ec2-ssh-key']) { // <-- Jenkins credential ID for your private key
+                    sh 'scp -r ./dist ubuntu@13.220.91.38:/var/www/myapp'
+                    sh 'ssh ubuntu@13.220.91.38 "cd /var/www/myapp && ls -l"'
                 }
             }
         }
     }
 
     post {
-        success {
-            echo "✅ Deployment successful!"
-        }
-        failure {
-            echo "❌ Pipeline failed!"
+        always {
+            echo 'Pipeline finished'
         }
     }
 }
