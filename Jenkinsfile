@@ -2,20 +2,20 @@ pipeline {
     agent any
 
     environment {
-    NODEJS_HOME = tool name: 'NodeJS_18', type: 'NodeJS'
-    PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
-    DEPLOY_SERVER = 'ubuntu@3.89.97.3'
-    DEPLOY_PATH = '/var/www/my-node-app'
-}
-
+        NODEJS_HOME = tool name: 'NodeJS_18', type: 'NodeJS'
+        PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
+        DEPLOY_SERVER = 'ubuntu@3.89.97.3'
+        DEPLOY_PATH = '/var/www/my-node-app'
+    }
 
     stages {
 
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/Harbey-tech/nodejs-ci-cd-pipeline.git',
-                    credentialsId: 'github-token'        // 🔐 GitHub PAT credentials
+                    url: 'https://github.com/Harbey-tech/nodejs-ci-cd-pipeline.git'
+                    // If repo is public, no credentialsId is needed
+                    // credentialsId: 'github-token'
             }
         }
 
@@ -39,7 +39,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sshagent(['ec2-ssh-key']) {                // 🔐 SSH key for EC2
+                sshagent(['ec2-ssh-key']) {  // Jenkins SSH credential ID
                     sh """
                         ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} << 'EOF'
 cd ${DEPLOY_PATH}
