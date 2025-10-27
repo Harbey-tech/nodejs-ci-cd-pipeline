@@ -1,21 +1,20 @@
 pipeline {
     agent any
 
-    
     environment {
-    NODEJS_HOME = tool name: 'NodeJS_25.0.0', type: 'NodeJS'
-    PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
-    DEPLOY_SERVER = 'ec2-user@<EC2_PUBLIC_IP>'
-    DEPLOY_PATH = '/var/www/my-node-app'
-}
-
-
+        NODEJS_HOME = tool name: 'NodeJS_25.0.0', type: 'NodeJS'
+        PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
+        DEPLOY_SERVER = 'ubuntu@<EC2_PUBLIC_IP>'       // 🔁 replace with your EC2 public IP
+        DEPLOY_PATH = '/var/www/my-node-app'
+    }
 
     stages {
+
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/<yourusername>/nodejs-ci-cd-pipeline.git'
+                    url: 'https://github.com/Harbey-tech/nodejs-ci-cd-pipeline.git',
+                    credentialsId: 'github-token'        // 🔐 GitHub PAT credentials
             }
         }
 
@@ -39,14 +38,16 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh '''
-                    ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} << 'EOF'
-                    cd ${DEPLOY_PATH}
-                    git pull origin main
-                    npm install --production
-                    pm2 restart my-node-app || pm2 start app.js --name "my-node-app"
-                    EOF
-                '''
+                sshagent(['ec2-ssh-key']) {                // 🔐 SSH key for EC2
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} << 'EOF'
+cd ${DEPLOY_PATH}
+git pull origin main
+npm install --production
+pm2 restart my-node-app || pm2 start app.js --name "my-node-app"
+EOF
+                    """
+                }
             }
         }
     }
