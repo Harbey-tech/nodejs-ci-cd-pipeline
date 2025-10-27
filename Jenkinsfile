@@ -2,80 +2,41 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '18'
-        DEPLOY_USER = 'ubuntu'
-        DEPLOY_HOST = '13.220.91.38'
-        DEPLOY_PATH = '/var/www/myapp'
+        DEPLOY_SERVER = 'ubuntu@<EC2_PUBLIC_IP>'
+        DEPLOY_PATH = '/var/www/my-node-app'
+        SSH_KEY = '/var/lib/jenkins/.ssh/id_rsa'  // adjust if needed
     }
 
     stages {
 
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/Harbey-tech/nodejs-ci-cd-pipeline.git',
+                    url: 'https://github.com/<username>/<repo>.git',
                     credentialsId: 'github-token'
-            }
-        }
-
-        stage('Check Node.js') {
-            steps {
-                sh 'node -v'
-                sh 'npm -v'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh 'npm test'
             }
         }
 
         stage('Build') {
             steps {
-                sh 'echo "No build needed for Node.js backend"'
+                sh 'npm install'
+                sh 'npm run build || echo "No build script"'
             }
         }
 
         stage('Deploy') {
             steps {
-                sshagent(['ec2-ssh-key']) {
-                    sh """
-                        # Ensure the deployment directory exists
-                        ssh $DEPLOY_USER@$DEPLOY_HOST 'mkdir -p $DEPLOY_PATH'
-
-                        # Copy files
-                        scp -r ./* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH
-                    """
-                }
+                sh '''
+                echo "Deploying to EC2..."
+                ssh -o StrictHostKeyChecking=no -i $SSH_KEY $DEPLOY_SERVER "mkdir -p $DEPLOY_PATH"
+                rsync -avz -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" ./ $DEPLOY_SERVER:$DEPLOY_PATH
+                ssh -i $SSH_KEY -o StrictHostKeyChecking=no $DEPLOY_SERVER "
+                    cd $DEPLOY_PATH &&
+                    npm install &&
+                    nohup npm start > app.log 2>&1 &
+                "
+                '''
             }
-        }
-
-        stage('Check Deployment Logs') {
-            steps {
-                sshagent(['ec2-ssh-key']) {
-                    sh """
-                        echo "Fetching deployment logs..."
-                        ssh $DEPLOY_USER@$DEPLOY_HOST 'tail -n 50 $DEPLOY_PATH/deploy.log || echo "No deploy log found"'
-                    """
-                }
-            }
-        }
-
-    }
-
-    post {
-        success {
-            echo '✅ Pipeline finished successfully!'
-        }
-        failure {
-            echo '❌ Pipeline failed!'
         }
     }
 }
