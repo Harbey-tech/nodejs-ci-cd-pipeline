@@ -3,13 +3,13 @@ pipeline {
 
     environment {
         NODE_VERSION = '18'
-        DEPLOY_PATH = '/var/www/my-node-app'
-        AWS_REGION  = 'us-east-1'
-        INSTANCE_ID = 'i-001425919cb4f24aa' // Your EC2 instance ID
+        DEPLOY_PATH = '/var/www/myapp'
+        INSTANCE_ID = 'i-001425919cb4f24aa'
+        AWS_REGION = 'us-east-1'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/Harbey-tech/nodejs-ci-cd-pipeline.git',
@@ -44,10 +44,7 @@ pipeline {
 
         stage('Deploy via SSM') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
-                ]]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                     sh """
                     aws ssm send-command \
                         --targets "Key=InstanceIds,Values=${INSTANCE_ID}" \
@@ -71,7 +68,7 @@ pipeline {
 
     post {
         success {
-            echo '✅ Deployment completed successfully via SSM!'
+            echo '✅ Deployment successful!'
         }
         failure {
             echo '❌ Deployment failed. Check logs for details.'
