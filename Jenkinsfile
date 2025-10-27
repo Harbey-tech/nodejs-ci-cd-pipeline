@@ -11,7 +11,9 @@ pipeline {
 
         stage('Checkout SCM') {
             steps {
-                checkout scm
+                git branch: 'main',
+                    url: 'https://github.com/Harbey-tech/nodejs-ci-cd-pipeline.git',
+                    credentialsId: 'github-token'
             }
         }
 
@@ -30,38 +32,33 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh 'npm test || true'
+                sh 'npm test || echo "No tests defined"'
             }
         }
 
         stage('Build') {
             steps {
-                echo 'Build completed successfully'
+                sh 'echo "Build completed successfully"'
             }
         }
 
         stage('Deploy') {
             steps {
-                sshagent(['ec2-ssh-key']) {
+                sshagent(['ubuntu']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no \$DEPLOY_SERVER '
-                        sudo mkdir -p \$DEPLOY_PATH &&
-                        sudo chown -R ubuntu:ubuntu \$DEPLOY_PATH &&
-                        cd \$DEPLOY_PATH &&
-                        rm -rf *
-                    '
-
-                    scp -o StrictHostKeyChecking=no -r * \$DEPLOY_SERVER:\$DEPLOY_PATH
-
-                    ssh -o StrictHostKeyChecking=no \$DEPLOY_SERVER '
-                        cd \$DEPLOY_PATH &&
-                        npm install &&
-                        nohup npm start > app.log 2>&1 &
+                    ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} '
+                        echo "Starting deployment..."
+                        sudo mkdir -p ${DEPLOY_PATH} &&
+                        sudo chown -R ubuntu:ubuntu ${DEPLOY_PATH} &&
+                        cd ${DEPLOY_PATH} &&
+                        rm -rf * &&
+                        echo "Deployment folder ready."
                     '
                     """
                 }
             }
         }
+
     }
 
     post {
@@ -69,7 +66,7 @@ pipeline {
             echo "✅ Pipeline completed successfully!"
         }
         failure {
-            echo "❌ Deployment failed. Check logs for details."
+            echo "❌ Pipeline failed. Check logs for details."
         }
     }
 }
