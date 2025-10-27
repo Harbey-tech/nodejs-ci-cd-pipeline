@@ -2,11 +2,12 @@ pipeline {
     agent any
 
     environment {
-        NODEJS_HOME = tool name: 'NodeJS_25.0.0', type: 'NodeJS'
-        PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
-        DEPLOY_SERVER = 'ubuntu@<EC2_PUBLIC_IP>'       // 🔁 replace with your EC2 public IP
-        DEPLOY_PATH = '/var/www/my-node-app'
-    }
+    NODEJS_HOME = tool name: 'NodeJS_18', type: 'NodeJS'
+    PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
+    DEPLOY_SERVER = 'ubuntu@3.89.97.3'
+    DEPLOY_PATH = '/var/www/my-node-app'
+}
+
 
     stages {
 
