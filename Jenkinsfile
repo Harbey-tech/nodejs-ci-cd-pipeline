@@ -46,7 +46,7 @@ pipeline {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-creds'
+                    credentialsId: 'aws-credentials'
                 ]]) {
                     sh """
                     aws ssm send-command \
